@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<!DOCTYPE html>
-<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,7 +18,7 @@
     }
     
    h1 {
-    color: #082600; /* Soft black for better readability */
+    color: #082600;
     text-align: center;
     margin: 0 0 25px;
     font-weight: 700;
@@ -32,7 +30,6 @@
     padding-bottom: 15px;
 }
 
-/* Optional: Add a subtle divider line */
 h1::after {
     content: "";
     display: block;
@@ -133,7 +130,6 @@ h1::after {
         transform: translateY(0);
     }
     
-    /* Enhanced Delete Button Styles */
     .delete-btn {
         background: linear-gradient(to right, #e74c3c, #c0392b);
         color: white;
@@ -156,7 +152,6 @@ h1::after {
         transform: translateY(0);
     }
     
-    /* Table Delete Button (small icon version) */
     #entriesTable .delete-btn {
         padding: 6px 10px;
         min-width: 36px;
@@ -422,7 +417,7 @@ h1::after {
             const reasonError = document.getElementById('reasonError');
             
             // State variables
-            let entries = {};
+            let entries = [];
             let currentEntryToDelete = null;
             
             // Initialize the app
@@ -569,7 +564,8 @@ h1::after {
                     totalAbsence,
                     recoveryTime,
                     leaveTime,
-                    reason
+                    reason,
+                    timestamp: Date.now() // Add timestamp for proper sorting
                 };
             }
             
@@ -608,18 +604,11 @@ h1::after {
             }
             
             function saveEntry(entry) {
-                const username = entry.username;
-                
                 // Load existing entries
                 loadEntries();
                 
-                // Create user array if it doesn't exist
-                if (!entries[username]) {
-                    entries[username] = [];
-                }
-                
-                // Add new entry
-                entries[username].push(entry);
+                // Add new entry to the beginning of the array
+                entries.unshift(entry);
                 
                 // Save to localStorage
                 localStorage.setItem('absenceRecoveryEntries', JSON.stringify(entries));
@@ -630,7 +619,12 @@ h1::after {
             
             function loadEntries() {
                 const savedEntries = localStorage.getItem('absenceRecoveryEntries');
-                entries = savedEntries ? JSON.parse(savedEntries) : {};
+                entries = savedEntries ? JSON.parse(savedEntries) : [];
+                
+                // Ensure entries is always an array
+                if (!Array.isArray(entries)) {
+                    entries = [];
+                }
             }
             
             function showResults(result) {
@@ -645,79 +639,74 @@ h1::after {
                 entriesBody.innerHTML = '';
                 
                 // Check if there are any entries
-                let hasEntries = false;
+                const hasEntries = entries.length > 0;
                 
-                // Add entries for all users
-                for (const username in entries) {
-                    if (entries.hasOwnProperty(username)) {
-                        const userEntries = entries[username];
-                        
-                        userEntries.forEach((entry, index) => {
-                            hasEntries = true;
-                            
-                            const row = document.createElement('tr');
-                            
-                            // Username
-                            const usernameCell = document.createElement('td');
-                            usernameCell.textContent = entry.username;
-                            row.appendChild(usernameCell);
-                            
-                            // Date
-                            const dateCell = document.createElement('td');
-                            dateCell.textContent = entry.date;
-                            row.appendChild(dateCell);
-                            
-                            // Shift Time
-                            const shiftCell = document.createElement('td');
-                            shiftCell.textContent = `${entry.shiftStart} - ${entry.shiftEnd}`;
-                            row.appendChild(shiftCell);
-                            
-                            // Absence Period
-                            const absenceCell = document.createElement('td');
-                            absenceCell.textContent = `${entry.absenceStart} - ${entry.absenceEnd}`;
-                            row.appendChild(absenceCell);
-                            
-                            // Total Absence
-                            const totalAbsenceCell = document.createElement('td');
-                            totalAbsenceCell.textContent = entry.totalAbsence;
-                            row.appendChild(totalAbsenceCell);
-                            
-                            // Lunch Included
-                            const lunchCell = document.createElement('td');
-                            const lunchIcon = document.createElement('span');
-                            lunchIcon.className = `lunch-icon ${entry.lunchIncluded ? 'lunch-yes' : 'lunch-no'}`;
-                            lunchIcon.textContent = entry.lunchIncluded ? '✅' : '❌';
-                            lunchCell.appendChild(lunchIcon);
-                            row.appendChild(lunchCell);
-                            
-                            // Recovery Time
-                            const recoveryCell = document.createElement('td');
-                            recoveryCell.textContent = entry.recoveryTime;
-                            row.appendChild(recoveryCell);
-                            
-                            // Leave Time
-                            const leaveCell = document.createElement('td');
-                            leaveCell.textContent = entry.leaveTime;
-                            row.appendChild(leaveCell);
-                            
-                            // Reason
-                            const reasonCell = document.createElement('td');
-                            reasonCell.textContent = entry.reason;
-                            row.appendChild(reasonCell);
-                            
-                            // Delete button
-                            const deleteCell = document.createElement('td');
-                            const deleteBtn = document.createElement('button');
-                            deleteBtn.textContent = '🗑️';
-                            deleteBtn.className = 'delete-btn';
-                            deleteBtn.addEventListener('click', () => confirmDelete(username, index));
-                            deleteCell.appendChild(deleteBtn);
-                            row.appendChild(deleteCell);
-                            
-                            entriesBody.appendChild(row);
-                        });
-                    }
-                }
+                // Sort entries by timestamp (newest first)
+                entries.sort((a, b) => b.timestamp - a.timestamp);
+                
+                // Add entries to table
+                entries.forEach((entry, index) => {
+                    const row = document.createElement('tr');
+                    
+                    // Username
+                    const usernameCell = document.createElement('td');
+                    usernameCell.textContent = entry.username;
+                    row.appendChild(usernameCell);
+                    
+                    // Date
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = entry.date;
+                    row.appendChild(dateCell);
+                    
+                    // Shift Time
+                    const shiftCell = document.createElement('td');
+                    shiftCell.textContent = `${entry.shiftStart} - ${entry.shiftEnd}`;
+                    row.appendChild(shiftCell);
+                    
+                    // Absence Period
+                    const absenceCell = document.createElement('td');
+                    absenceCell.textContent = `${entry.absenceStart} - ${entry.absenceEnd}`;
+                    row.appendChild(absenceCell);
+                    
+                    // Total Absence
+                    const totalAbsenceCell = document.createElement('td');
+                    totalAbsenceCell.textContent = entry.totalAbsence;
+                    row.appendChild(totalAbsenceCell);
+                    
+                    // Lunch Included
+                    const lunchCell = document.createElement('td');
+                    const lunchIcon = document.createElement('span');
+                    lunchIcon.className = `lunch-icon ${entry.lunchIncluded ? 'lunch-yes' : 'lunch-no'}`;
+                    lunchIcon.textContent = entry.lunchIncluded ? '✅' : '❌';
+                    lunchCell.appendChild(lunchIcon);
+                    row.appendChild(lunchCell);
+                    
+                    // Recovery Time
+                    const recoveryCell = document.createElement('td');
+                    recoveryCell.textContent = entry.recoveryTime;
+                    row.appendChild(recoveryCell);
+                    
+                    // Leave Time
+                    const leaveCell = document.createElement('td');
+                    leaveCell.textContent = entry.leaveTime;
+                    row.appendChild(leaveCell);
+                    
+                    // Reason
+                    const reasonCell = document.createElement('td');
+                    reasonCell.textContent = entry.reason;
+                    row.appendChild(reasonCell);
+                    
+                    // Delete button
+                    const deleteCell = document.createElement('td');
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '🗑️';
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.addEventListener('click', () => confirmDelete(index));
+                    deleteCell.appendChild(deleteBtn);
+                    row.appendChild(deleteCell);
+                    
+                    entriesBody.appendChild(row);
+                });
                 
                 // Show/hide no entries message and table
                 if (hasEntries) {
@@ -739,9 +728,9 @@ h1::after {
                 }
             }
             
-            function confirmDelete(username, index) {
-                currentEntryToDelete = { username, index };
-                modalMessage.textContent = `Are you sure you want to delete this entry for ${username}?`;
+            function confirmDelete(index) {
+                currentEntryToDelete = index;
+                modalMessage.textContent = `Are you sure you want to delete this entry for ${entries[index].username}?`;
                 confirmModal.style.display = 'block';
             }
             
@@ -756,107 +745,96 @@ h1::after {
             }
             
             function handleDelete() {
-                if (currentEntryToDelete) {
+                if (currentEntryToDelete !== null) {
                     // Delete single entry
-                    const { username, index } = currentEntryToDelete;
-                    
-                    if (entries[username] && entries[username][index]) {
-                        entries[username].splice(index, 1);
-                        
-                        // Remove user if no more entries
-                        if (entries[username].length === 0) {
-                            delete entries[username];
-                        }
-                        
-                        // Save to localStorage
-                        localStorage.setItem('absenceRecoveryEntries', JSON.stringify(entries));
-                        
-                        // Update table
-                        updateEntriesTable();
-                    }
+                    entries.splice(currentEntryToDelete, 1);
                 } else {
                     // Clear all entries
-                    entries = {};
-                    localStorage.removeItem('absenceRecoveryEntries');
-                    updateEntriesTable();
+                    entries = [];
                 }
+                
+                // Save to localStorage
+                localStorage.setItem('absenceRecoveryEntries', JSON.stringify(entries));
+                
+                // Update table
+                updateEntriesTable();
                 
                 closeModal();
             }
             
             function copyTableToClipboard() {
-    try {
-        const originalTable = document.getElementById('entriesTable');
-        const clonedTable = originalTable.cloneNode(true);
+                try {
+                    const originalTable = document.getElementById('entriesTable');
+                    const clonedTable = originalTable.cloneNode(true);
 
-        // Remove the last column (Action)
-        clonedTable.querySelectorAll('tr').forEach(row => {
-            if (row.cells.length > 0) {
-                row.deleteCell(row.cells.length - 1);
+                    // Remove the last column (Action)
+                    clonedTable.querySelectorAll('tr').forEach(row => {
+                        if (row.cells.length > 0) {
+                            row.deleteCell(row.cells.length - 1);
+                        }
+                    });
+
+                    // Apply compact styles directly to the table and cells
+                    clonedTable.style.borderCollapse = 'collapse';
+                    clonedTable.style.fontFamily = 'Segoe UI, Tahoma, sans-serif';
+                    clonedTable.style.fontSize = '13px';
+                    clonedTable.style.width = '100%';
+
+                    const ths = clonedTable.querySelectorAll('th');
+                    const tds = clonedTable.querySelectorAll('td');
+
+                    ths.forEach(th => {
+                        th.style.backgroundColor = '#f0f0f0';
+                        th.style.border = '1px solid #ccc';
+                        th.style.padding = '6px';
+                        th.style.textAlign = 'left';
+                    });
+
+                    tds.forEach((td, index) => {
+                        td.style.border = '1px solid #ccc';
+                        td.style.padding = '6px';
+
+                        const rowIndex = Math.floor(index / ths.length);
+                        if (rowIndex % 2 === 1) {
+                            td.style.backgroundColor = '#fafafa';
+                        }
+                    });
+
+                    // Temporary hidden container
+                    const tempDiv = document.createElement('div');
+                    tempDiv.contentEditable = true;
+                    tempDiv.style.position = 'absolute';
+                    tempDiv.style.left = '-9999px';
+                    tempDiv.appendChild(clonedTable);
+                    document.body.appendChild(tempDiv);
+
+                    // Copy process
+                    const range = document.createRange();
+                    range.selectNodeContents(tempDiv);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+
+                    document.execCommand('copy');
+                    selection.removeAllRanges();
+                    document.body.removeChild(tempDiv);
+
+                    // Visual feedback
+                    const originalText = copyTableBtn.textContent;
+                    copyTableBtn.textContent = '✓ Copied!';
+                    copyTableBtn.classList.remove('copy-btn');
+                    copyTableBtn.classList.add('success-btn');
+
+                    setTimeout(() => {
+                        copyTableBtn.textContent = originalText;
+                        copyTableBtn.classList.remove('success-btn');
+                        copyTableBtn.classList.add('copy-btn');
+                    }, 2000);
+                } catch (error) {
+                    console.error('Copy failed:', error);
+                    alert('Copy failed. Try again or copy manually.');
+                }
             }
-        });
-
-        // Apply compact styles directly to the table and cells
-        clonedTable.style.borderCollapse = 'collapse';
-        clonedTable.style.fontFamily = 'Segoe UI, Tahoma, sans-serif';
-        clonedTable.style.fontSize = '13px';
-        clonedTable.style.width = '100%';
-
-        const ths = clonedTable.querySelectorAll('th');
-        const tds = clonedTable.querySelectorAll('td');
-
-        ths.forEach(th => {
-            th.style.backgroundColor = '#f0f0f0';
-            th.style.border = '1px solid #ccc';
-            th.style.padding = '6px';
-            th.style.textAlign = 'left';
-        });
-
-        tds.forEach((td, index) => {
-            td.style.border = '1px solid #ccc';
-            td.style.padding = '6px';
-
-            const rowIndex = Math.floor(index / ths.length);
-            if (rowIndex % 2 === 1) {
-                td.style.backgroundColor = '#fafafa';
-            }
-        });
-
-        // Temporary hidden container
-        const tempDiv = document.createElement('div');
-        tempDiv.contentEditable = true;
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        tempDiv.appendChild(clonedTable);
-        document.body.appendChild(tempDiv);
-
-        // Copy process
-        const range = document.createRange();
-        range.selectNodeContents(tempDiv);
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        document.execCommand('copy');
-        selection.removeAllRanges();
-        document.body.removeChild(tempDiv);
-
-        // Visual feedback
-        const originalText = copyTableBtn.textContent;
-        copyTableBtn.textContent = '✓ Copied!';
-        copyTableBtn.classList.remove('copy-btn');
-        copyTableBtn.classList.add('success-btn');
-
-        setTimeout(() => {
-            copyTableBtn.textContent = originalText;
-            copyTableBtn.classList.remove('success-btn');
-            copyTableBtn.classList.add('copy-btn');
-        }, 2000);
-    } catch (error) {
-        console.error('Copy failed:', error);
-        alert('Copy failed. Try again or copy manually.');
-    }
-}
 
             // Initialize the table
             updateEntriesTable();
